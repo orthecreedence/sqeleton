@@ -1,21 +1,40 @@
-var sqeleton = require('../clients/node/client');
+var Promise = require('bluebird');
+var sqeleton = require('../clients/node/').default;
 
 var jobs = 9999;
+var num_workers = 20;
 var i = 0;
-var loop = function()
+var worker = function()
 {
-	console.log('queue job', i);
-	sqeleton.enqueue('jobs', '{"name":"do-stuff"}', 10, 128, 0)
-		.then(function(res) {
-			console.log('res: ', res);
-		});
+	return new Promise(function(resolve, reject) {
+		var loop = function()
+		{
+			if(i >= jobs) return resolve();
+			i++;
+			sqeleton.enqueue('jobs', '{"name":"do-stuff"}', 10, 128, 0)
+				.then(function(res) {
+					if(res % 1000 == 0) console.log('res: ', res);
+					setImmediate(loop);
+				})
+				.catch(function(e) {
+					i--;
+					throw e;
+				});
 
-	i++;
-	if(i < jobs) setTimeout(loop);
+		};
+		loop();
+	});
 };
 
-for(var i = 0; i < 10; i++)
+
+var actions = [];
+for(var i = 0; i < num_workers; i++)
 {
-	loop();
+	actions.push(worker());
 }
+
+Promise.all(actions)
+	.finally(function() {
+		return sqeleton.close();
+	});
 

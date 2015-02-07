@@ -1,6 +1,6 @@
 var argv = require('yargs').argv;
 
-var sqeleton = require('./client.js');
+var sqeleton = require('./client.js').default;
 
 var args = argv._
 var cmd = args.shift();
@@ -15,5 +15,8 @@ sqeleton[cmd].apply({}, args)
 	})
 	.catch(function(err) {
 		console.error('client: ', err);
+	})
+	.finally(function() {
+		sqeleton.close();
 	});
 

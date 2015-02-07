@@ -10,6 +10,7 @@
   "main": "client",
   "devDependencies": {
     "bluebird": "^2.3.5",
+    "generic-pool": "^2.1.1",
     "redis": "^0.12.1",
     "yargs": "^1.3.2"
   }
