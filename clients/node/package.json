@@ -1,0 +1,16 @@
+{
+  "name": "sqeleton-node",
+  "description": "Node library for working with the sqeleton queue",
+  "version": "0.1.0",
+  "author": {
+    "name": "Andrew Lyon",
+    "email": "orthecreedence@gmail.com"
+  },
+  "license": "MIT",
+  "main": "client",
+  "devDependencies": {
+    "bluebird": "^2.3.5",
+    "redis": "^0.12.1",
+    "yargs": "^1.3.2"
+  }
+}
