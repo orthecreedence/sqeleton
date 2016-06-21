@@ -1,3 +1,48 @@
+-- Welcome to sqeleton.lua! Here's how it works technically:
+--
+-- This a a work queue. The work queue is divided into channels. Think of a
+-- channel as a separate workspace for different types of jobs. You can use as
+-- many or as few channels as you like. When consumers as for jobs, they ask for
+-- them in a specific channel.
+--
+-- Each job added to the queue is given a unique (queue-unique, not channel-
+-- unique) auto-incremented integer ID. This is is used to track the job across
+-- calls and also used to give priority (all things equal, lower IDs take
+-- precedence because they were created first).
+--
+-- Jobs also have a unique key, "sqeleon:job:[job_id]", which stores both the
+-- jobs payload and statistics (reserves, buries, etc).
+--
+-- Each channel is comprised of a few sections:
+--   * a ready bucket. jobs go here when they are up for grabs for a consumer.
+--     this is a sorted set, ordered by the job priority (ASC) and job id (ASC).
+--   * a pending bucket. jobs go here when they are being worked on. this is a
+--     sorted set, ordered by the current timestamp (in ms, passed by the
+--     producer) + the job's time to run ("ttr") value. This means that jobs
+--     that timeout first will be given priority.
+--   * a buried bucket. jobs go here if they are buried, which means they are
+--     kept in the system but not available for processing (until kicked). this
+--     is good for failed jobs that require human inspection.
+--   * a stats bucket. it tracks job reserves, deleted, enqueues, dequeues, etc.
+--
+-- All queue operations having to do with ready/pending state operate only on
+-- the job's ID value, never the job payload itself.
+--
+-- When a job is enqueued, it is placed in the ready bucket if it has no delay,
+-- or the pending bucket if there is a delay.
+--
+-- When a job is dequeued, it is removed from the ready bucket and placed into
+-- the pending bucket. It remains there until it is deleted or released. If a
+-- job times out (ttr) while in the pending bucket, it remains there until the
+-- next dequeue operation comes through, at which point the job is returned and
+-- its ttr is reset (and it's kept in pending).
+--
+-- Once a job is completed, it is either released (meaning "I am unable to do
+-- this task, someone else should do it) back into the ready state, or it is
+-- deleted from the queue system if completed successfully. A job can also be
+-- buried, meaning it will not be grabbed by any consumers until "kicked." This
+-- is good for faiures that require human inspection.
+
 -- used to treat arrays like hashes
 local tohash = function(array)
 	local num = table.getn(array)
@@ -200,13 +245,14 @@ local kick = function(job_id, priority)
 end
 
 -- wipe the entire queue clean. remove all jobs, stats, tracking, channels, etc
--- from the queue.
+-- from the queue. this is an expensive operation, so use wisely.
 local wipe = function()
 	-- create at least one sqeleton:* entry for our query below
 	redis.call('set', 'sqeleton:deleteme', 1);
-	for _,k in ipairs(redis.call('keys', 'skeleton:*')) do
-		redis.call('del', k);
-	end
+	local keys = redis.call('keys', 'sqeleton:*') 
+	for i=1,#keys,1000 do 
+		redis.call('del', unpack(keys, i, math.min(i+999, #keys)));
+	end 
 	--redis.call('del', unpack(redis.call('keys', 'sqeleton:*')))
 	redis.call('del', 'sqeleton')
 	return 1

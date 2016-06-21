@@ -1,7 +1,7 @@
-var Promise = require('bluebird');
+var Promise = require('../clients/node/node_modules/bluebird');
 var sqeleton = require('../clients/node/').default;
 
-var jobs = 9999;
+var jobs = 10000;
 var num_workers = 20;
 var i = 0;
 var worker = function()

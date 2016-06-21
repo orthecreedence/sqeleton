@@ -1,6 +1,6 @@
 var argv = require('yargs').argv;
 
-var sqeleton = require('./client.js').default;
+var sqeleton = require('./client.js').client();
 
 var args = argv._
 var cmd = args.shift();
