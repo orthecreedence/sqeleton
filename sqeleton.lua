@@ -249,10 +249,10 @@ end
 local wipe = function()
 	-- create at least one sqeleton:* entry for our query below
 	redis.call('set', 'sqeleton:deleteme', 1);
-	local keys = redis.call('keys', 'sqeleton:*') 
-	for i=1,#keys,1000 do 
+	local keys = redis.call('keys', 'sqeleton:*')
+	for i=1,#keys,1000 do
 		redis.call('del', unpack(keys, i, math.min(i+999, #keys)));
-	end 
+	end
 	--redis.call('del', unpack(redis.call('keys', 'sqeleton:*')))
 	redis.call('del', 'sqeleton')
 	return 1
